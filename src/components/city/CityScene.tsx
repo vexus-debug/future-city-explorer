@@ -131,12 +131,12 @@ function Navigation({ input, preset, reset, tour, motion, onPosition }: ScenePro
 export function CityScene(props: SceneProps) {
   return <>
     <color attach="background" args={[palette.sky]} />
-    <fog attach="fog" args={[palette.fog, 220, 730]} />
-    <ambientLight intensity={0.7} color={palette.white} />
-    <hemisphereLight args={[palette.white, palette.ground, 1.2]} />
-    <directionalLight position={[100, 200, 100]} intensity={2} color={palette.white} />
-    <Environment resolution={64}><Lightformer intensity={2} position={[0, 160, 0]} rotation-x={Math.PI / 2} scale={[400,400,1]} /><Lightformer color={palette.cyan} intensity={1} position={[-200,60,0]} rotation-y={Math.PI / 2} scale={[100,100,1]} /></Environment>
+    <fog attach="fog" args={[palette.fog, 180, 680]} />
+    <ambientLight intensity={0.08} color={palette.moon} />
+    <hemisphereLight args={[palette.moon, palette.ground, 0.12]} />
+    <directionalLight position={[-160, 220, 120]} intensity={1.3} color={palette.moon} />
+    <Environment resolution={64}><Lightformer intensity={0.6} color={palette.moon} position={[0, 160, 0]} rotation-x={Math.PI / 2} scale={[400,400,1]} /><Lightformer color={palette.cyan} intensity={1.2} position={[-200,40,0]} rotation-y={Math.PI / 2} scale={[200,30,1]} /><Lightformer color={palette.magenta} intensity={0.8} position={[200,30,0]} rotation-y={-Math.PI / 2} scale={[200,20,1]} /></Environment>
     <Ground /><Architecture /><Pyramid /><Skyways motion={props.motion} /><Navigation {...props} />
-    {props.quality && <EffectComposer multisampling={0}><Bloom intensity={0.75} luminanceThreshold={0.8} luminanceSmoothing={0.4} mipmapBlur resolutionScale={0.5} /></EffectComposer>}
+    {props.quality && <EffectComposer multisampling={0}><Bloom intensity={1.1} luminanceThreshold={0.6} luminanceSmoothing={0.35} mipmapBlur resolutionScale={0.5} /></EffectComposer>}
   </>;
 }
