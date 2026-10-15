@@ -28,7 +28,7 @@ export function cityTexture(kind: 'windows' | 'ground' | 'pyramid') {
       // clusters: lit floors grouped by coarse noise
       const cluster = hash(Math.floor(x / 40), Math.floor(y / 30)), n = hash(x, y);
       let c = '#0d1520';
-      if (cluster > 0.55 && n > 0.35) c = cluster > 0.9 ? '#ff3fb4' : cluster > 0.75 ? '#ffb35c' : '#5ff4ff';
+      if (cluster > 0.72 && n > 0.45) c = cluster > 0.9 ? '#ff3fb4' : cluster > 0.75 ? '#ffb35c' : '#5ff4ff';
       else if (n > 0.93) c = '#ffd9a0';
       ctx.fillStyle = c; ctx.fillRect(x, y, 5, 6);
     }
