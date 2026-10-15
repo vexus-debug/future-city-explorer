@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "source": {
+    "provider": "GitHub",
+    "url": "https://github.com/vexus-debug/future-city-browser.git"
+  },
+  "capabilities": [
+    {
+      "capability": "code",
+      "source": "GitHub repository",
+      "outcome": "imported",
+      "status": "complete",
+      "next_action": null
+    },
+    {
+      "capability": "schema, records, authentication, authorization, storage, providers, endpoints, callbacks, webhooks, schedules, secrets",
+      "source": "repository inspection manifest",
+      "outcome": "not detected in manifest",
+      "status": "not_applicable",
+      "next_action": null
+    },
+    {
+      "capability": "verification",
+      "source": "user instruction",
+      "outcome": "not run as requested",
+      "status": "not_run",
+      "next_action": "User will verify"
+    }
+  ]
+}

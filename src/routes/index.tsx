@@ -1,24 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { CityExplorer } from "@/components/city/CityExplorer";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  ssr: false,
+  head: () => ({ meta: [
+    { title: "Future City 5.5 — World Explorer" },
+    { name: "description", content: "Explore a futuristic metropolis, monumental pyramid, and elevated neon skyways in an interactive mobile 3D city." },
+    { property: "og:title", content: "Future City 5.5 — World Explorer" },
+    { property: "og:description", content: "Enter a living sci-fi skyline and explore its pyramid, towers, and elevated skyways." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
+  ] }),
+  component: CityExplorer,
 });
-
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
-}
