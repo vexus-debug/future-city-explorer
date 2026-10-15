@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "source": {
+    "provider": "GitHub",
+    "url": "https://github.com/vexus-debug/future-city-browser.git"
+  },
+  "capabilities": [
+    {
+      "capability": "code",
+      "source": "GitHub repository",
+      "outcome": "imported as-is",
+      "status": "complete",
+      "next_action": null
+    },
+    {
+      "capability": "schema",
+      "source": "repository inspection manifest",
+      "outcome": "no database schema detected",
+      "status": "not_applicable",
+      "next_action": null
+    },
+    {
+      "capability": "records",
+      "source": "repository inspection manifest",
+      "outcome": "no exported records detected",
+      "status": "not_applicable",
+      "next_action": null
+    },
+    {
+      "capability": "auth identities",
+      "source": "repository inspection manifest",
+      "outcome": "no auth migration detected",
+      "status": "not_applicable",
+      "next_action": null
+    },
+    {
+      "capability": "authorization",
+      "source": "repository inspection manifest",
+      "outcome": "no authorization migration detected",
+      "status": "not_applicable",
+      "next_action": null
+    },
+    {
+      "capability": "uploaded file bytes",
+      "source": "repository inspection manifest",
+      "outcome": "no uploaded file migration detected",
+      "status": "not_applicable",
+      "next_action": null
+    },
+    {
+      "capability": "external providers",
+      "source": "repository inspection manifest",
+      "outcome": "none detected",
+      "status": "not_applicable",
+      "next_action": null
+    },
+    {
+      "capability": "public endpoints",
+      "source": "repository inspection manifest",
+      "outcome": "none detected",
+      "status": "not_applicable",
+      "next_action": null
+    },
+    {
+      "capability": "callbacks",
+      "source": "repository inspection manifest",
+      "outcome": "none detected",
+      "status": "not_applicable",
+      "next_action": null
+    },
+    {
+      "capability": "webhooks",
+      "source": "repository inspection manifest",
+      "outcome": "none detected",
+      "status": "not_applicable",
+      "next_action": null
+    },
+    {
+      "capability": "schedules",
+      "source": "repository inspection manifest",
+      "outcome": "none detected",
+      "status": "not_applicable",
+      "next_action": null
+    },
+    {
+      "capability": "secrets",
+      "source": "repository inspection manifest",
+      "outcome": "no environment variable names detected",
+      "status": "not_applicable",
+      "next_action": null
+    },
+    {
+      "capability": "cutover",
+      "source": "user instruction",
+      "outcome": "repository files imported into project",
+      "status": "complete",
+      "next_action": null
+    },
+    {
+      "capability": "verification",
+      "source": "user instruction",
+      "outcome": "not run as requested",
+      "status": "not_run",
+      "next_action": "User will verify"
+    }
+  ]
+}
