@@ -4,37 +4,32 @@ import { Environment, Lightformer, OrbitControls } from '@react-three/drei';
 import { Bloom, EffectComposer } from '@react-three/postprocessing';
 import type { OrbitControls as OrbitImpl } from 'three-stdlib';
 import * as THREE from 'three';
-import { buildArchitecture, cityTexture, makeRoad, palette, viewpoints, type NavigationInput } from './world';
+import { buildArchitecture, buildPyramid, buildStreets, cityTexture, makeRoad, palette, viewpoints, type NavigationInput } from './world';
 
 function Architecture() {
   const geometry = useMemo(buildArchitecture, []);
   const windows = useMemo(() => cityTexture('windows'), []);
   useEffect(() => () => { Object.values(geometry).forEach(g => g?.dispose()); windows.dispose(); }, [geometry, windows]);
   return <>
-    {geometry.shells && <mesh geometry={geometry.shells}><meshStandardMaterial map={windows} emissiveMap={windows} emissive={palette.white} emissiveIntensity={0.7} metalness={0.65} roughness={0.4} /></mesh>}
-    {geometry.crowns && <mesh geometry={geometry.crowns}><meshStandardMaterial color={palette.metal} metalness={0.8} roughness={0.32} /></mesh>}
+    {geometry.shells && <mesh geometry={geometry.shells}><meshStandardMaterial map={windows} emissiveMap={windows} emissive={palette.white} emissiveIntensity={1.4} metalness={0.9} roughness={0.18} color="#5a6878" /></mesh>}
+    {geometry.crowns && <mesh geometry={geometry.crowns}><meshStandardMaterial color={palette.metal} metalness={0.85} roughness={0.35} /></mesh>}
     {geometry.lights && <mesh geometry={geometry.lights}><meshBasicMaterial color={palette.cyan} toneMapped={false} /></mesh>}
+    {geometry.neon && <mesh geometry={geometry.neon}><meshBasicMaterial color={palette.magenta} toneMapped={false} /></mesh>}
   </>;
 }
 function Pyramid() {
   const texture = useMemo(() => cityTexture('pyramid'), []);
-  const ribs = useMemo(() => {
-    const pos: number[] = [];
-    const corners: [number, number][] = [[-58, -58], [58, -58], [58, 58], [-58, 58]];
-    for (const [x,z] of corners) pos.push(x, 1, z, 0, 102, 0);
-    for (let y = 5; y < 100; y += 6) {
-      const s = 58 * (1 - y / 102);
-      pos.push(-s,y,-s, s,y,-s, s,y,-s, s,y,s, s,y,s, -s,y,s, -s,y,s, -s,y,-s);
-    }
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); return g;
-  }, []);
-  useEffect(() => () => { texture.dispose(); ribs.dispose(); }, [texture, ribs]);
+  const geo = useMemo(buildPyramid, []);
+  const core = useRef<THREE.Mesh>(null);
+  useFrame(({ clock }) => { if (core.current) { core.current.rotation.y = clock.elapsedTime * 0.6; core.current.scale.setScalar(1 + Math.sin(clock.elapsedTime * 2) * 0.12); } });
+  useEffect(() => () => { texture.dispose(); geo.body?.dispose(); geo.glow?.dispose(); }, [texture, geo]);
   return <group>
-    <mesh position-y={50.5} rotation-y={Math.PI / 4}><coneGeometry args={[82, 101, 4, 1]} /><meshStandardMaterial map={texture} color={palette.metal} metalness={0.8} roughness={0.33} /></mesh>
-    <lineSegments geometry={ribs}><lineBasicMaterial color={palette.cyan} toneMapped={false} transparent opacity={0.65} /></lineSegments>
-    <mesh position-y={2}><boxGeometry args={[121, 4, 121]} /><meshStandardMaterial color={palette.metal} metalness={0.8} /></mesh>
-    <mesh position={[0, 6, 61]}><boxGeometry args={[19, 8, 0.6]} /><meshBasicMaterial color={palette.cyan} toneMapped={false} /></mesh>
-    <mesh position={[0, 103, 0]}><octahedronGeometry args={[1.6]} /><meshBasicMaterial color={palette.mint} toneMapped={false} /></mesh>
+    {geo.body && <mesh geometry={geo.body}><meshStandardMaterial map={texture} color="#3a4452" metalness={0.92} roughness={0.22} /></mesh>}
+    {geo.glow && <mesh geometry={geo.glow}><meshBasicMaterial color={palette.cyan} toneMapped={false} /></mesh>}
+    <mesh position={[0, 6, 59.4]}><boxGeometry args={[18, 9, 0.4]} /><meshBasicMaterial color={palette.cyan} toneMapped={false} /></mesh>
+    <mesh ref={core} position={[0, geo.apex + 4, 0]}><octahedronGeometry args={[3.2]} /><meshBasicMaterial color={palette.mint} toneMapped={false} /></mesh>
+    <mesh position={[0, geo.apex + 160, 0]}><cylinderGeometry args={[1.4, 3.5, 320, 12, 1, true]} /><meshBasicMaterial color={palette.cyan} transparent opacity={0.22} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} side={THREE.DoubleSide} /></mesh>
+    <pointLight position={[0, geo.apex + 6, 0]} color={palette.cyan} intensity={4000} distance={220} />
   </group>;
 }
 const roadPoints = [
@@ -42,37 +37,51 @@ const roadPoints = [
   [[-340,37,-180],[-160,38,-125],[-75,33,-65],[-94,28,32],[-180,22,125],[-180,18,280]],
   [[-260,13,230],[-70,15,202],[90,17,185],[270,20,210]],
 ];
+const CARS = 48;
 function Skyways({ motion }: { motion: boolean }) {
-  const roads = useMemo(() => roadPoints.map(p => makeRoad(p, 9)), []);
-  const traffic = useRef<THREE.InstancedMesh>(null);
-  const time = useRef(0), dummy = useMemo(() => new THREE.Object3D(), []);
+  const roads = useMemo(() => roadPoints.map(p => makeRoad(p, 12)), []);
+  const heads = useRef<THREE.InstancedMesh>(null), tails = useRef<THREE.InstancedMesh>(null);
+  const time = useRef(0), dummy = useMemo(() => new THREE.Object3D(), []), off = useMemo(() => new THREE.Vector3(), []);
   useFrame((_, rawDelta) => {
     if (motion) time.current += Math.min(rawDelta, 0.05);
-    const mesh = traffic.current; if (!mesh) return;
-    for (let i = 0; i < 42; i++) {
-      const road = roads[i % 3], t = (i / 14 + time.current * (0.008 + (i % 4) * 0.002)) % 1;
-      if (!road) continue;
-      const p = road.curve.getPointAt(t), tangent = road.curve.getTangentAt(t);
-      dummy.position.copy(p).add(new THREE.Vector3(-tangent.z * 2, 1, tangent.x * 2));
-      dummy.rotation.y = Math.atan2(tangent.x, tangent.z); dummy.scale.set(0.7, 0.35, 2.8); dummy.updateMatrix(); mesh.setMatrixAt(i, dummy.matrix);
+    const h = heads.current, tl = tails.current; if (!h || !tl) return;
+    for (let i = 0; i < CARS; i++) {
+      const road = roads[i % 3]; if (!road) continue;
+      const dir = i % 2 ? 1 : -1, speed = 0.008 + (i % 5) * 0.0018;
+      let t = ((i / 16) + time.current * speed) % 1; if (dir < 0) t = 1 - t;
+      const p = road.curve.getPointAt(t), tangent = road.curve.getTangentAt(t).multiplyScalar(dir);
+      const lane = (dir > 0 ? 1.6 : -1.6) + (i % 4 < 2 ? 1.4 : 0) * Math.sign(dir);
+      const base = p.clone().add(off.set(-tangent.z * lane, 0.8, tangent.x * lane));
+      const yaw = Math.atan2(tangent.x, tangent.z);
+      dummy.rotation.set(0, yaw, 0);
+      dummy.position.copy(base).addScaledVector(tangent, 1.6); dummy.scale.set(1.1, 0.25, 0.6); dummy.updateMatrix(); h.setMatrixAt(i, dummy.matrix);
+      dummy.position.copy(base).addScaledVector(tangent, -2.2); dummy.scale.set(1.1, 0.25, 3.5); dummy.updateMatrix(); tl.setMatrixAt(i, dummy.matrix);
     }
-    mesh.instanceMatrix.needsUpdate = true;
+    h.instanceMatrix.needsUpdate = true; tl.instanceMatrix.needsUpdate = true;
   });
   useEffect(() => () => roads.forEach(r => { r.geometry.dispose(); r.supportGeometry?.dispose(); }), [roads]);
   return <>
     {roads.map((r, i) => <group key={i}>
-      <mesh geometry={r.geometry}><meshStandardMaterial color={palette.ground} side={THREE.DoubleSide} roughness={0.42} metalness={0.7} /></mesh>
-      {r.supportGeometry && <mesh geometry={r.supportGeometry}><meshStandardMaterial color={palette.metal} /></mesh>}
-      {r.edges.map((edge, j) => <mesh key={j}><tubeGeometry args={[edge, 140, 0.22, 4, false]} /><meshBasicMaterial color={i === 1 ? palette.cyan : palette.amber} toneMapped={false} /></mesh>)}
-      <mesh><tubeGeometry args={[r.curve, 140, 0.055, 3, false]} /><meshBasicMaterial color={palette.white} /></mesh>
+      <mesh geometry={r.geometry}><meshStandardMaterial color="#141c25" side={THREE.DoubleSide} roughness={0.3} metalness={0.6} /></mesh>
+      {r.supportGeometry && <mesh geometry={r.supportGeometry}><meshStandardMaterial color="#39434e" roughness={0.85} /></mesh>}
+      {r.edges.map((edge, j) => <group key={j}>
+        <mesh><tubeGeometry args={[edge, 140, 0.55, 4, false]} /><meshStandardMaterial color="#4a5562" roughness={0.9} /></mesh>
+        <mesh position-y={0.5}><tubeGeometry args={[edge, 140, 0.1, 3, false]} /><meshBasicMaterial color={i === 1 ? palette.cyan : palette.amber} toneMapped={false} /></mesh>
+      </group>)}
     </group>)}
-    <instancedMesh ref={traffic} args={[undefined, undefined, 42]}><boxGeometry /><meshBasicMaterial color={palette.amber} toneMapped={false} /></instancedMesh>
+    <instancedMesh ref={heads} args={[undefined, undefined, CARS]}><boxGeometry /><meshBasicMaterial color={palette.white} toneMapped={false} /></instancedMesh>
+    <instancedMesh ref={tails} args={[undefined, undefined, CARS]}><boxGeometry /><meshBasicMaterial color={palette.red} toneMapped={false} transparent opacity={0.85} /></instancedMesh>
   </>;
 }
 function Ground() {
   const texture = useMemo(() => cityTexture('ground'), []);
-  useEffect(() => () => texture.dispose(), [texture]);
-  return <mesh rotation-x={-Math.PI / 2} position-y={-0.2}><planeGeometry args={[1500, 1500]} /><meshStandardMaterial map={texture} roughness={0.55} metalness={0.6} /></mesh>;
+  const streets = useMemo(buildStreets, []);
+  useEffect(() => () => { texture.dispose(); streets.curbs?.dispose(); streets.marks?.dispose(); }, [texture, streets]);
+  return <>
+    <mesh rotation-x={-Math.PI / 2} position-y={-0.05}><planeGeometry args={[1500, 1500]} /><meshStandardMaterial map={texture} color="#8a96a8" roughness={0.25} metalness={0.75} /></mesh>
+    {streets.curbs && <mesh geometry={streets.curbs}><meshStandardMaterial color={palette.curb} roughness={0.8} metalness={0.2} /></mesh>}
+    {streets.marks && <mesh geometry={streets.marks}><meshBasicMaterial color="#6f7d8c" /></mesh>}
+  </>;
 }
 export interface SceneProps {
   input: RefObject<NavigationInput>; preset: number; reset: number; tour: boolean; motion: boolean; quality: boolean;
@@ -122,12 +131,12 @@ function Navigation({ input, preset, reset, tour, motion, onPosition }: ScenePro
 export function CityScene(props: SceneProps) {
   return <>
     <color attach="background" args={[palette.sky]} />
-    <fog attach="fog" args={[palette.fog, 220, 730]} />
-    <ambientLight intensity={0.7} color={palette.white} />
-    <hemisphereLight args={[palette.white, palette.ground, 1.2]} />
-    <directionalLight position={[100, 200, 100]} intensity={2} color={palette.white} />
-    <Environment resolution={64}><Lightformer intensity={2} position={[0, 160, 0]} rotation-x={Math.PI / 2} scale={[400,400,1]} /><Lightformer color={palette.cyan} intensity={1} position={[-200,60,0]} rotation-y={Math.PI / 2} scale={[100,100,1]} /></Environment>
+    <fog attach="fog" args={[palette.fog, 180, 680]} />
+    <ambientLight intensity={0.08} color={palette.moon} />
+    <hemisphereLight args={[palette.moon, palette.ground, 0.12]} />
+    <directionalLight position={[-160, 220, 120]} intensity={1.3} color={palette.moon} />
+    <Environment resolution={64}><Lightformer intensity={0.6} color={palette.moon} position={[0, 160, 0]} rotation-x={Math.PI / 2} scale={[400,400,1]} /><Lightformer color={palette.cyan} intensity={1.2} position={[-200,40,0]} rotation-y={Math.PI / 2} scale={[200,30,1]} /><Lightformer color={palette.magenta} intensity={0.8} position={[200,30,0]} rotation-y={-Math.PI / 2} scale={[200,20,1]} /></Environment>
     <Ground /><Architecture /><Pyramid /><Skyways motion={props.motion} /><Navigation {...props} />
-    {props.quality && <EffectComposer multisampling={0}><Bloom intensity={0.75} luminanceThreshold={0.8} luminanceSmoothing={0.4} mipmapBlur resolutionScale={0.5} /></EffectComposer>}
+    {props.quality && <EffectComposer multisampling={0}><Bloom intensity={1.1} luminanceThreshold={0.6} luminanceSmoothing={0.35} mipmapBlur resolutionScale={0.5} /></EffectComposer>}
   </>;
 }
